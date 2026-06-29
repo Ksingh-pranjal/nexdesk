@@ -1,0 +1,60 @@
+# version of the compose file format we're using
+version: '3.8'
+
+services:
+  # ── MongoDB Container ──
+  mongodb:
+    image: mongo:7
+    container_name: nexdesk-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      # Persists database data even if the container is deleted/recreated
+      # Without this, restarting the container would WIPE your data
+      - mongo_data:/data/db
+    networks:
+      - nexdesk-network
+
+  # ── Backend Container ──
+  backend:
+    build: ./backend
+    container_name: nexdesk-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      # Inside Docker's internal network, containers reach each other
+      # by SERVICE NAME, not localhost. "mongodb" here = the service
+      # name defined above, NOT "localhost:27017" like on your laptop
+      - MONGO_URI=mongodb://mongodb:27017/nexdesk
+      - JWT_SECRET=nexdesk_super_secret_key_change_this_later
+      - PORT=5000
+    depends_on:
+      # Tells Docker to start mongodb BEFORE backend
+      - mongodb
+    networks:
+      - nexdesk-network
+
+  # ── Frontend Container ──
+  frontend:
+    build: ./frontend
+    container_name: nexdesk-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+      # Left side (3000) = port on YOUR laptop
+      # Right side (80) = port INSIDE the container (nginx's default)
+    depends_on:
+      - backend
+    networks:
+      - nexdesk-network
+
+# Named volume — Docker manages this storage area for MongoDB data
+volumes:
+  mongo_data:
+
+# Custom network — lets our 3 containers find and talk to each other by name
+networks:
+  nexdesk-network:
+    driver: bridge
