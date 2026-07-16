@@ -40,5 +40,5 @@ deploy:
     - oc rollout status deployment/nexdesk-backend
     - oc rollout status deployment/nexdesk-frontend
 
-only:
-  - main
+  only:
+    - main
