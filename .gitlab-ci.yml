@@ -1,0 +1,24 @@
+stages:
+  - build
+
+variables:
+  FRONTEND_IMAGE: nexdesk-frontend
+  BACKEND_IMAGE: nexdesk-backend
+
+build_backend:
+  stage: build
+  tags:
+    - shell
+  script:
+    - echo "Building Backend Image..."
+    - podman build -t $BACKEND_IMAGE:latest ./backend
+    - podman images
+
+build_frontend:
+  stage: build
+  tags:
+    - shell
+  script:
+    - echo "Building Frontend Image..."
+    - podman build -t $FRONTEND_IMAGE:latest ./frontend
+    - podman images
