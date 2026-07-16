@@ -9,7 +9,14 @@ const app = express();
 
 connectDB();
 
-app.use(cors());                                /*Allows frontend to talk to backend*/
+app.use(cors({
+  origin: [
+    'http://localhost:3000',                                              // local dev
+    'http://nexdesk-frontend-pranjal.apps.ccllab.copycatltd.com',       // OpenShift frontend
+    'https://nexdesk-frontend-pranjal.apps.ccllab.copycatltd.com'       // HTTPS version
+  ],
+  credentials: true
+}));                                /*Allows frontend to talk to backend*/
 
 app.use(express.json());                        /*for Express to read JSON data in req.body*/
 

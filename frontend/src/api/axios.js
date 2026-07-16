@@ -2,7 +2,7 @@ import axios from 'axios';
 
 //backend base url to use everywhere else easily
 const api = axios.create({
-    baseURL: 'http://localhost:5000/api'
+  baseURL: process.env.REACT_APP_API_URL
 });
 
 //INTERCEPTOR - runs before every single request automatically and attaches JWT token to every request
