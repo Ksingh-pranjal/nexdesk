@@ -20,4 +20,4 @@ COPY --from=build /app/build /usr/share/nginx/html
 
 EXPOSE 80
 
-# nginx has its own built-in CMD already
+# nginx has its own built-in CMD already    

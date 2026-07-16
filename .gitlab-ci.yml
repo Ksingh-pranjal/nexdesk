@@ -5,40 +5,52 @@ stages:
 variables:
   BACKEND_IMAGE: docker.io/$DOCKER_USERNAME/nexdesk-backend
   FRONTEND_IMAGE: docker.io/$DOCKER_USERNAME/nexdesk-frontend
+  # CI_PIPELINE_ID is automatically provided by GitLab
+  # It's a unique number for each pipeline run (e.g. 6, 7, 8...)
+  # Using it as image tag guarantees OpenShift always pulls a fresh image
+  IMAGE_TAG: $CI_PIPELINE_ID
 
 build_backend:
   stage: build
   script:
     - echo "Building Backend..."
-    - podman build -t $BACKEND_IMAGE:v2 ./backend
+    - podman build -t $BACKEND_IMAGE:$IMAGE_TAG ./backend
     - echo $DOCKER_PASSWORD | podman login docker.io -u $DOCKER_USERNAME --password-stdin
-    - podman push $BACKEND_IMAGE:v2
+    - podman push $BACKEND_IMAGE:$IMAGE_TAG
 
 build_frontend:
   stage: build
   script:
     - echo "Building Frontend..."
-    - podman build -t $FRONTEND_IMAGE:v3 ./frontend
+    # ✅ Added --build-arg so REACT_APP_API_URL gets baked into React build
+    # $REACT_APP_API_URL comes from GitLab Variables (Settings → CI/CD → Variables)
+    - podman build
+        --build-arg REACT_APP_API_URL=$REACT_APP_API_URL
+        -t $FRONTEND_IMAGE:$IMAGE_TAG
+        ./frontend
     - echo $DOCKER_PASSWORD | podman login docker.io -u $DOCKER_USERNAME --password-stdin
-    - podman push $FRONTEND_IMAGE:v3
+    - podman push $FRONTEND_IMAGE:$IMAGE_TAG
 
 deploy:
   stage: deploy
   script:
     - echo "Logging into OpenShift..."
     - oc login $OPENSHIFT_SERVER --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify=true
-
     - oc project $OPENSHIFT_PROJECT
 
     - echo "Updating Backend deployment..."
-    - oc set image deployment/nexdesk-backend container=$BACKEND_IMAGE:v2
+    - oc set image deployment/nexdesk-backend container=$BACKEND_IMAGE:$IMAGE_TAG
 
     - echo "Updating Frontend deployment..."
-    - oc set image deployment/nexdesk-frontend container=$FRONTEND_IMAGE:v3
+    - oc set image deployment/nexdesk-frontend container=$FRONTEND_IMAGE:$IMAGE_TAG
+
+    - echo "Forcing pod restart to pull new images..."
+    - oc rollout restart deployment/nexdesk-backend
+    - oc rollout restart deployment/nexdesk-frontend
 
     - echo "Waiting for rollout..."
-    - oc rollout status deployment/nexdesk-backend
-    - oc rollout status deployment/nexdesk-frontend
+    - oc rollout status deployment/nexdesk-backend --timeout=120s
+    - oc rollout status deployment/nexdesk-frontend --timeout=120s
 
   only:
     - main
