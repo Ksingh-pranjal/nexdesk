@@ -305,7 +305,6 @@ REACT_APP_API_URL=
 
 # 📸 Screenshots
 
-```
 ## Landing Page
 
 <p align="center">
@@ -321,7 +320,7 @@ REACT_APP_API_URL=
 ## Admin Panel - New Ticket Page
 
 <p align="center">
-<img src="screenshots/03-AdinTicket.png" width="900">
+<img src="screenshots/03-AdminTicket.png" width="900">
 </p>
 
 ## Tickets Detail
@@ -347,7 +346,6 @@ REACT_APP_API_URL=
 <p align="center">
 <img src="screenshots/06-OpenShift.png" width="900">
 </p>
-```
 
 ---
 
