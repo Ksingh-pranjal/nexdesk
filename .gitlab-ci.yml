@@ -13,8 +13,6 @@ build_backend:
     - podman build -t $BACKEND_IMAGE:v2 ./backend
     - echo $DOCKER_PASSWORD | podman login docker.io -u $DOCKER_USERNAME --password-stdin
     - podman push $BACKEND_IMAGE:v2
-  only:
-    - main
 
 build_frontend:
   stage: build
@@ -23,29 +21,24 @@ build_frontend:
     - podman build -t $FRONTEND_IMAGE:v3 ./frontend
     - echo $DOCKER_PASSWORD | podman login docker.io -u $DOCKER_USERNAME --password-stdin
     - podman push $FRONTEND_IMAGE:v3
-  only:
-    - main
 
 deploy:
   stage: deploy
   script:
     - echo "Logging into OpenShift..."
     - oc login $OPENSHIFT_SERVER --token=$OPENSHIFT_TOKEN --insecure-skip-tls-verify=true
+
     - oc project $OPENSHIFT_PROJECT
 
-    - echo "Importing latest Backend image..."
-    - oc import-image nexdesk-backend:v2 --confirm
+    - echo "Updating Backend deployment..."
+    - oc set image deployment/nexdesk-backend container=$BACKEND_IMAGE:v2
 
-    - echo "Importing latest Frontend image..."
-    - oc import-image nexdesk-frontend:v3 --confirm
+    - echo "Updating Frontend deployment..."
+    - oc set image deployment/nexdesk-frontend container=$FRONTEND_IMAGE:v3
 
-    - echo "Restarting Backend deployment..."
-    - oc rollout restart deployment/nexdesk-backend
-
-    - echo "Restarting Frontend deployment..."
-    - oc rollout restart deployment/nexdesk-frontend
-
+    - echo "Waiting for rollout..."
     - oc rollout status deployment/nexdesk-backend
     - oc rollout status deployment/nexdesk-frontend
-  only:
-    - main
+
+only:
+  - main
